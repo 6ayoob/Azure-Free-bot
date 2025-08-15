@@ -1,9 +1,15 @@
 from flask import Flask
-import threading, time, traceback
+import threading
+import time
+import traceback
+import os
 from config import TELEGRAM_TOKEN, TELEGRAM_CHAT_ID, SYMBOLS, MAX_OPEN_POSITIONS
 from strategy import check_signal, execute_buy, manage_position, load_position
 import requests
 
+# -----------------------------
+# ⚡ إعداد البوت و Flask
+# -----------------------------
 app = Flask(__name__)
 
 def send_telegram_message(text):
@@ -13,13 +19,22 @@ def send_telegram_message(text):
     except Exception as e:
         print(f"Telegram error: {e}")
 
+# -----------------------------
+# 🔁 حلقة المراقبة المستمرة
+# -----------------------------
 def trading_loop():
-    send_telegram_message("🚀 البوت بدأ العمل | EMA9/EMA21 + RSI مع هدف ووقف خسارة ✅")
+    send_telegram_message("🚀 البوت بدأ العمل | EMA9/EMA21 + RSI مع هدف واحد ووقف خسارة ✅")
+
     while True:
         try:
-            open_positions_count = sum(1 for s in SYMBOLS if load_position(s))
+            open_positions_count = 0
+            for symbol in SYMBOLS:
+                if load_position(symbol):
+                    open_positions_count += 1
+
             for symbol in SYMBOLS:
                 position = load_position(symbol)
+
                 if position is None:
                     if open_positions_count >= MAX_OPEN_POSITIONS:
                         continue
@@ -33,22 +48,32 @@ def trading_loop():
                 else:
                     closed = manage_position(symbol)
                     if closed:
-                        send_telegram_message(f"صفقة {symbol} أُغلقت بناءً على هدف أو وقف خسارة.")
+                        send_telegram_message(f"صفقة {symbol} أُغلقت بناءً على هدف الربح أو وقف الخسارة.")
                         open_positions_count -= 1
         except Exception:
             send_telegram_message(f"⚠️ خطأ في البوت:\n{traceback.format_exc()}")
-        time.sleep(60)
 
+        time.sleep(60)  # يمكن تعديل الفترة حسب الحاجة
+
+# -----------------------------
+# 🌐 Routes
+# -----------------------------
 @app.route('/')
 def index():
     return "بوت التداول يعمل 🚀"
 
+# -----------------------------
+# 🔹 Start loop in a separate thread
+# -----------------------------
 def start_trading_thread():
     thread = threading.Thread(target=trading_loop)
     thread.daemon = True
     thread.start()
 
+# -----------------------------
+# 🔹 تشغيل التطبيق
+# -----------------------------
 if __name__ == "__main__":
     start_trading_thread()
-    app.run(host="0.0.0.0", port=8000)
-
+    port = int(os.environ.get("PORT", 8000))  # Azure يحدد المنفذ تلقائيًا
+    app.run(host="0.0.0.0", port=port)
