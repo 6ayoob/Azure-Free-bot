@@ -7,11 +7,11 @@ from strategy import check_signal, execute_buy, manage_position, load_position
 import requests
 import sys
 
-# -----------------------------
-# ⚡ إعداد Flask
-# -----------------------------
 app = Flask(__name__)
 
+# -----------------------------
+# إرسال رسالة Telegram
+# -----------------------------
 def send_telegram_message(text):
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     try:
@@ -20,7 +20,7 @@ def send_telegram_message(text):
         print(f"[ERROR] Telegram error: {e}", file=sys.stderr)
 
 # -----------------------------
-# 🔁 حلقة التداول الرئيسية
+# حلقة التداول
 # -----------------------------
 def trading_loop():
     send_telegram_message("🚀 البوت بدأ العمل | EMA9/EMA21 + RSI مع هدف واحد ووقف خسارة ✅")
@@ -62,17 +62,17 @@ def trading_loop():
             send_telegram_message(f"⚠️ خطأ في البوت:\n{err}")
             print(f"[ERROR] {err}", flush=True)
 
-        time.sleep(60)  # تحقق كل دقيقة
+        time.sleep(60)
 
 # -----------------------------
-# 🌐 Routes
+# Routes
 # -----------------------------
 @app.route('/')
 def index():
     return "بوت التداول يعمل 🚀"
 
 # -----------------------------
-# 🔹 Start loop in a separate thread
+# Start loop in a separate thread
 # -----------------------------
 def start_trading_thread():
     thread = threading.Thread(target=trading_loop)
@@ -81,7 +81,7 @@ def start_trading_thread():
     print("[INFO] Trading thread started", flush=True)
 
 # -----------------------------
-# 🔹 تشغيل التطبيق
+# تشغيل التطبيق
 # -----------------------------
 if __name__ == "__main__":
     start_trading_thread()
